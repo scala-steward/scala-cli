@@ -190,7 +190,7 @@ object BuildDeps {
   def scalaCliVersion = "0.1.9"
 }
 
-def graalVmVersion     = "22.3.0"
+def graalVmVersion     = "22.3.1"
 def graalVmJavaVersion = 17
 def graalVmJvmId       = s"graalvm-java$graalVmJavaVersion:$graalVmVersion"
 
