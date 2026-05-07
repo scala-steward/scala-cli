@@ -388,7 +388,7 @@ Version of SBT to be used for the export (1.12.4 by default)
 
 ### `--mill-version`
 
-Version of Mill to be used for the export (1.1.5 by default)
+Version of Mill to be used for the export (1.1.6 by default)
 
 ### `--mvn-version`
 
