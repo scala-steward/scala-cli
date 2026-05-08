@@ -10,7 +10,7 @@ import scala.build.Logger
 import scala.build.errors.BuildException
 import scala.build.input.{JavaFile, ScalaCliInvokeData, SingleElement, VirtualJavaFile}
 import scala.build.internal.JavaParserProxyMaker
-import scala.build.options.{BuildRequirements, SuppressWarningOptions}
+import scala.build.options.SuppressWarningOptions
 import scala.build.preprocessing.directives.PreprocessedDirectives
 
 /** Java source preprocessor.
@@ -56,8 +56,8 @@ final case class JavaPreprocessor(
             path = j.path,
             options = Some(preprocessedDirectives.globalUsings),
             optionsWithTargetRequirements = preprocessedDirectives.usingsWithReqs,
-            requirements = Some(BuildRequirements()),
-            scopedRequirements = Nil,
+            requirements = Some(preprocessedDirectives.globalReqs),
+            scopedRequirements = preprocessedDirectives.scopedReqs,
             mainClassOpt = None,
             directivesPositions = preprocessedDirectives.directivesPositions
           ))
@@ -102,8 +102,8 @@ final case class JavaPreprocessor(
             wrapperParamsOpt = None,
             options = Some(preprocessedDirectives.globalUsings),
             optionsWithTargetRequirements = preprocessedDirectives.usingsWithReqs,
-            requirements = Some(BuildRequirements()),
-            scopedRequirements = Nil,
+            requirements = Some(preprocessedDirectives.globalReqs),
+            scopedRequirements = preprocessedDirectives.scopedReqs,
             mainClassOpt = None,
             scopePath = v.scopePath,
             directivesPositions = preprocessedDirectives.directivesPositions

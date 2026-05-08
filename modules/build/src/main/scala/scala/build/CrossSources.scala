@@ -135,6 +135,10 @@ final case class CrossSources(
 }
 
 object CrossSources {
+  private val testScopeFileSuffixes: Set[String] = Set(".test.scala", ".test.java")
+
+  private def hasTestScopeSuffix(fileName: String): Boolean =
+    testScopeFileSuffixes.exists(fileName.endsWith)
 
   private def withinTestSubDirectory(p: ScopePath, inputs: Inputs): Boolean =
     p.root.exists { path =>
@@ -248,12 +252,14 @@ object CrossSources {
           .flatMap(_.valueFor(path).toSeq)
           .foldLeft(BuildRequirements())(_.orElse(_))
 
-      // Scala CLI treats all `.test.scala` files tests as well as
-      // files from within `test` subdirectory from provided input directories
-      // If file has `using target <scope>` directive this take precendeces.
+      // Scala CLI treats all source files whose names end with one of the
+      // testScopeFileSuffixes (e.g. `.test.scala`, `.test.java`) as tests, as well as
+      // files from within `test` subdirectory from provided input directories.
+      // If file has `using target <scope>` directive this takes precedence.
       if (
         fromDirectives.scope.isEmpty &&
-        (path.subPath.last.endsWith(".test.scala") || withinTestSubDirectory(path, allInputs))
+        (CrossSources.hasTestScopeSuffix(path.subPath.last) ||
+        withinTestSubDirectory(path, allInputs))
       )
         fromDirectives.copy(scope = Some(BuildRequirements.ScopeRequirement(Scope.Test)))
       else fromDirectives

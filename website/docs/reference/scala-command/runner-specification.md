@@ -4069,11 +4069,11 @@ Aliases: `--fmt-version`
 ## `test` command
 **SHOULD have for Scala Runner specification.**
 
-Compile and test Scala code.
+Compile and test Scala (or Java) code.
 
 Test sources are compiled separately (after the 'main' sources), and may use different dependencies, compiler options, and other configurations.
 A source file is treated as a test source if:
-  - the file name ends with `.test.scala`
+  - the file name ends with `.test.scala` or `.test.java`
   - the file comes from a directory that is provided as input, and the relative path from that file to its original directory contains a `test` directory
   - it contains the `//> using target.scope test` directive (Experimental)
 

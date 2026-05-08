@@ -334,6 +334,71 @@ class SourcesTests extends TestUtil.ScalaCliBuildSuite {
     }
   }
 
+  /** Asserts that the only Java source produced by `testInputs` is routed to the test scope and
+    * appears at `expectedPath`.
+    */
+  private def expectJavaFileRoutedToTestScope(
+    testInputs: TestInputs,
+    expectedPath: os.RelPath
+  ): Unit =
+    testInputs.withInputs { (root, inputs) =>
+      val (crossSources, _) =
+        CrossSources.forInputs(
+          inputs,
+          preprocessors,
+          TestLogger(),
+          SuppressWarningOptions()
+        ).orThrow
+
+      val scopedSources = crossSources.scopedSources(BuildOptions()).orThrow
+      val mainSources   =
+        scopedSources.sources(
+          Scope.Main,
+          crossSources.sharedOptions(BuildOptions()),
+          root,
+          TestLogger()
+        ).orThrow
+      val testSources =
+        scopedSources.sources(
+          Scope.Test,
+          crossSources.sharedOptions(BuildOptions()),
+          root,
+          TestLogger()
+        ).orThrow
+
+      expect(mainSources.paths.isEmpty)
+      expect(testSources.paths.map(_._2) == Seq(expectedPath))
+    }
+
+  private val javaTestSourceContent: String =
+    """public class Something {
+      |  public int a = 1;
+      |}
+      |""".stripMargin
+
+  test("a .test.java file should be routed to the test scope") {
+    val expectedPath = os.rel / "Something.test.java"
+    val testInputs   = TestInputs(expectedPath -> javaTestSourceContent)
+    expectJavaFileRoutedToTestScope(testInputs, expectedPath)
+  }
+
+  test("a .java file under a test/ directory should be routed to the test scope") {
+    val expectedPath = os.rel / "test" / "Something.java"
+    val testInputs   = TestInputs(Seq(expectedPath -> javaTestSourceContent), Seq("."))
+    expectJavaFileRoutedToTestScope(testInputs, expectedPath)
+  }
+
+  test("a .java file with //> using target.scope test should be routed to the test scope") {
+    val expectedPath = os.rel / "Something.java"
+    val testInputs   = TestInputs(
+      expectedPath ->
+        s"""//> using target.scope test
+           |
+           |$javaTestSourceContent""".stripMargin
+    )
+    expectJavaFileRoutedToTestScope(testInputs, expectedPath)
+  }
+
   test("should skip SheBang in .sc and .scala") {
     val testInputs = TestInputs(
       os.rel / "something1.sc" ->
