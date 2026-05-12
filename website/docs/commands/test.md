@@ -16,7 +16,7 @@ so [using directives](../guides/introduction/using-directives.md) can be used to
 
 A source file is treated as test source if:
 
-- the file name ends with `.test.scala`, or
+- the file name ends with `.test.scala` or `.test.java`, or
 - the file comes from a directory that is provided as input, and the relative path from that file to its original
   directory contains a `test` directory, or
 - it contains the `//> using target.scope test` directive
@@ -55,7 +55,7 @@ Given that directory structure, let's analyze what file(s) will be treated as te
 
 `scala-cli example` results in the following files being treated as test sources:
 
-- `a.test.scala`, since it ends with `.test.scala`
+- `a.test.scala`, since it ends with `.test.scala` (the same applies to `.test.java` for Java sources)
 - `src/test/scala/b.scala`, since the path to that directory contains a directory named `test`
 
 Note that `e.scala` is not treated as a test source since it lacks a parent directory in its relative path that is
@@ -71,7 +71,7 @@ contain `test` (the fact that the directory provided as input is named `test` do
 Directives take precedence over file or path names, so `using target.scope main` can be used to force `test/a.scala`
 or `a.test.scala` to not be treated as tests.
 
-As a rule of thumb, we recommend naming all of your test files with the `.test.scala` suffix.
+As a rule of thumb, we recommend naming all of your test files with the `.test.scala` (or `.test.java` for Java sources) suffix.
 
 ## Test directives
 

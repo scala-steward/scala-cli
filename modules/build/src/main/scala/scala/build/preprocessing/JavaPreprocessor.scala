@@ -10,7 +10,7 @@ import scala.build.Logger
 import scala.build.errors.BuildException
 import scala.build.input.{JavaFile, ScalaCliInvokeData, SingleElement, VirtualJavaFile}
 import scala.build.internal.JavaParserProxyMaker
-import scala.build.options.{BuildRequirements, SuppressWarningOptions}
+import scala.build.options.SuppressWarningOptions
 import scala.build.preprocessing.directives.PreprocessedDirectives
 
 /** Java source preprocessor.
@@ -52,15 +52,44 @@ final case class JavaPreprocessor(
             )
               .preprocess(content)
           }
-          Seq(PreprocessedSource.OnDisk(
-            path = j.path,
-            options = Some(preprocessedDirectives.globalUsings),
-            optionsWithTargetRequirements = preprocessedDirectives.usingsWithReqs,
-            requirements = Some(BuildRequirements()),
-            scopedRequirements = Nil,
-            mainClassOpt = None,
-            directivesPositions = preprocessedDirectives.directivesPositions
-          ))
+          // Java's source-file rule requires that a public class be declared in a file named
+          // exactly `<ClassName>.java`, so emit `*.test.java` as an in-memory source whose
+          // generated path strips the `.test` infix. This lets users follow the same naming
+          // convention as `.test.scala` for routing while still compiling under `javac`.
+          val testJavaSuffix          = ".test.java"
+          val preprocessedJavaSources =
+            if j.subPath.last.endsWith(testJavaSuffix) then {
+              val strippedFileName =
+                s"${j.subPath.last.stripSuffix(testJavaSuffix)}.java"
+              val strippedSubPath: os.SubPath =
+                if j.subPath.segments.sizeIs > 1 then
+                  os.sub / j.subPath.segments.init / strippedFileName
+                else os.sub / strippedFileName
+              Seq(PreprocessedSource.InMemory(
+                originalPath = Right((j.subPath, j.path)),
+                relPath = os.rel / strippedSubPath,
+                content = content.getBytes(StandardCharsets.UTF_8),
+                wrapperParamsOpt = None,
+                options = Some(preprocessedDirectives.globalUsings),
+                optionsWithTargetRequirements = preprocessedDirectives.usingsWithReqs,
+                requirements = Some(preprocessedDirectives.globalReqs),
+                scopedRequirements = preprocessedDirectives.scopedReqs,
+                mainClassOpt = None,
+                scopePath = scopePath,
+                directivesPositions = preprocessedDirectives.directivesPositions
+              ))
+            }
+            else
+              Seq(PreprocessedSource.OnDisk(
+                path = j.path,
+                options = Some(preprocessedDirectives.globalUsings),
+                optionsWithTargetRequirements = preprocessedDirectives.usingsWithReqs,
+                requirements = Some(preprocessedDirectives.globalReqs),
+                scopedRequirements = preprocessedDirectives.scopedReqs,
+                mainClassOpt = None,
+                directivesPositions = preprocessedDirectives.directivesPositions
+              ))
+          preprocessedJavaSources
         })
       case v: VirtualJavaFile =>
         val res = either {
@@ -102,8 +131,8 @@ final case class JavaPreprocessor(
             wrapperParamsOpt = None,
             options = Some(preprocessedDirectives.globalUsings),
             optionsWithTargetRequirements = preprocessedDirectives.usingsWithReqs,
-            requirements = Some(BuildRequirements()),
-            scopedRequirements = Nil,
+            requirements = Some(preprocessedDirectives.globalReqs),
+            scopedRequirements = preprocessedDirectives.scopedReqs,
             mainClassOpt = None,
             scopePath = v.scopePath,
             directivesPositions = preprocessedDirectives.directivesPositions

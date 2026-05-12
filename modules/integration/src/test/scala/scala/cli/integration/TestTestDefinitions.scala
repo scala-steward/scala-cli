@@ -855,28 +855,41 @@ abstract class TestTestDefinitions extends ScalaCliSuite with TestScalaVersionAr
     }
   }
 
-  test("successful pure Java test with JUnit") {
-    val expectedMessage = "Hello from JUnit"
-    TestInputs(
-      os.rel / "test" / "MyTests.java" ->
-        s"""//> using test.dependencies junit:junit:4.13.2
-           |//> using test.dependencies com.novocode:junit-interface:0.11
-           |import org.junit.Test;
-           |import static org.junit.Assert.assertEquals;
-           |
-           |public class MyTests {
-           |  @Test
-           |  public void foo() {
-           |    assertEquals(4, 2 + 2);
-           |    System.out.println("$expectedMessage");
-           |  }
-           |}
-           |""".stripMargin
-    ).fromRoot { root =>
-      val res = os.proc(TestUtil.cli, "test", extraOptions, ".").call(cwd = root)
-      expect(res.out.text().contains(expectedMessage))
-    }
+  for {
+    (placementName, fileRelPath, extraDirectives, extraCliFlags) <- Seq(
+      (".test.java suffix", os.rel / "MyTests.test.java", "", Seq.empty[String]),
+      ("test/ subdirectory", os.rel / "test" / "MyTests.java", "", Seq.empty[String]),
+      (
+        "//> using target.scope test",
+        os.rel / "MyTests.java",
+        "//> using target.scope test\n",
+        Seq("--power")
+      )
+    )
+    expectedMessage = "Hello from JUnit"
   }
+    test(s"successful pure Java test with JUnit ($placementName)") {
+      TestInputs(
+        fileRelPath ->
+          s"""$extraDirectives//> using test.dep junit:junit:4.13.2
+             |//> using test.dep com.novocode:junit-interface:0.11
+             |import org.junit.Test;
+             |import static org.junit.Assert.assertEquals;
+             |
+             |public class MyTests {
+             |  @Test
+             |  public void foo() {
+             |    assertEquals(4, 2 + 2);
+             |    System.out.println("$expectedMessage");
+             |  }
+             |}
+             |""".stripMargin
+      ).fromRoot { root =>
+        val res =
+          os.proc(TestUtil.cli, extraCliFlags, "test", extraOptions, ".").call(cwd = root)
+        expect(res.out.text().contains(expectedMessage))
+      }
+    }
 
   test(s"zio-test warning when zio-test-sbt was not passed") {
     TestUtil.retryOnCi() {
