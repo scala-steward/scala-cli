@@ -28,6 +28,7 @@ while IFS= read -r file; do
   case "$file" in
     modules/*|build.mill|project/*) CODE=true ;;
     website/*) DOCS=true ;;
+    .github/release/release-procedure.md) : ;;
     .github/*) CI=true ;;
     .scalafmt.conf|.scalafix.conf) FORMAT_CONFIG=true ;;
     gcbenchmark/*) BENCHMARK=true ;;
